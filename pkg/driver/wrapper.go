@@ -1,6 +1,9 @@
 package driver
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+
 	"github.com/google/uuid"
 	"github.com/pion/mediadevices/pkg/driver/availability"
 	"github.com/pion/mediadevices/pkg/io/audio"
@@ -9,11 +12,10 @@ import (
 )
 
 func wrapAdapter(a Adapter, info Info) Driver {
-	generator, err := uuid.NewRandom()
+	generator, err := deterministicUUID(info.Label)
 	if err != nil {
 		panic(err)
 	}
-
 	id := generator.String()
 	d := &adapterWrapper{
 		Adapter: a,
@@ -47,6 +49,22 @@ func wrapAdapter(a Adapter, info Info) Driver {
 	default:
 		panic("adapter has to be either VideoRecorder/AudioRecorder")
 	}
+}
+
+func deterministicUUID(input string) (uuid.UUID, error) {
+	// calculate the MD5 hash of the input string
+	hasher := md5.New()
+	_, err := hasher.Write([]byte(input))
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	// convert the hash value to a string
+	md5string := hex.EncodeToString(hasher.Sum(nil))
+
+	// generate UUID from first 16 bytes of the MD5 hash
+	uuid, err := uuid.FromBytes([]byte(md5string[0:16]))
+	return uuid, err
 }
 
 type adapterWrapper struct {
