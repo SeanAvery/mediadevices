@@ -92,6 +92,15 @@ func Initialize() {
 	discover(discovered, "/dev/video*")
 }
 
+// Reinitialize clears all registered camera devices and re-initializes them.
+func Reinitialize() {
+	manager := driver.GetManager()
+	for _, d := range manager.Query(driver.FilterVideoRecorder()) {
+		manager.Delete(d.ID())
+	}
+	Initialize()
+}
+
 func discover(discovered map[string]struct{}, pattern string) {
 	devices, err := filepath.Glob(pattern)
 	if err != nil {
